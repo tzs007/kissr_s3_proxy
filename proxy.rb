@@ -8,11 +8,20 @@ require 'action_dispatch'
 require 'active_support'
 
 class Proxy < Goliath::API
-  include Goliath::Rack::Templates 
+  include Goliath::Rack::Templates
 
   def response(env)
     host = ENV['RACK_ENV'] == 'production'  ?
       env['SERVER_NAME'] : 'test.kissr.com'
+
+
+    if host.match(/staging.kissr.com$/)
+      host.sub!('staging.kissr.com','kissr.com')
+      bucket = 'kissr-staging'
+    else
+      bucket = ENV['KISSR_BUCKET']
+    end
+
     bucket = aws.directories.new(key: ENV['KISSR_BUCKET'])
 
     request = env['REQUEST_PATH']
@@ -43,7 +52,7 @@ class Proxy < Goliath::API
   def mime_type(extention)
     extentions = {'htm' => "text/html"}
     if extentions[extention]
-      extentions[extention] 
+      extentions[extention]
     else
       Mime::Type.lookup_by_extension(extention).to_s
     end
